@@ -46,6 +46,7 @@ jQuery(document).ready(function($) {
                     }
 
                     if (data.length === 0) {
+                        loading = false;
                         $('#loading').remove(); // Remove loading message
                         return;
                     }
