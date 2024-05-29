@@ -123,7 +123,7 @@ jQuery(document).ready(function($) {
     // Infinite scroll with delay for subsequent loads
     $('#chat-container').on('scroll', function() {
         if ($('#chat-container').scrollTop() + $('#chat-container').innerHeight() >= $('#chat-container')[0].scrollHeight) {
-            loadMessages(2000); // 2-second delay
+            loadMessages(1000); // 2-second delay
         }
     });
 
