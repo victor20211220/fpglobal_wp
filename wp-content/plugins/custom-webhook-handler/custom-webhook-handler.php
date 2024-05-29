@@ -185,6 +185,10 @@ function send_message_to_endpoint($url, $message) {
 
 function periskope_get_messages( WP_REST_Request $request ) {
     global $wpdb, $table_name;
+    // Set headers to prevent caching
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Cache-Control: post-check=0, pre-check=0', false);
+    header('Pragma: no-cache');
     $results = $wpdb->get_results( "SELECT * FROM $table_name ORDER BY timestamp ASC", ARRAY_A );
     return new WP_REST_Response( $results, 200 );
 }
