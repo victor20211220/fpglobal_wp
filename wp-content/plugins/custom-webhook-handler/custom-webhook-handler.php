@@ -53,9 +53,11 @@ function handle_message_created(WP_REST_Request $request) {
     $insert_data = array(
         'org_id' => $data['org_id'],
         'chat_id' => $data['chat_id'],
-        'unique_id' => $data['unique_id'],
+        'message_id' => $data['message_id'],
         'author' => $data['author'],
         'body' => $data['body'],
+        'has_quoted_msg' => $data['has_quoted_msg'],
+        'quoted_message_id' => $data['quoted_message_id'],
         'from_me' => $data['from_me'],
         'is_deleted' => $data['is_deleted'],
         'timestamp' => $data['timestamp'],
@@ -84,6 +86,8 @@ function handle_message_updated(WP_REST_Request $request) {
     $data = $body_params['data'];
     $update_data = array(
         'body' => $data['body'],
+        'has_quoted_msg' => $data['has_quoted_msg'],
+        'quoted_message_id' => $data['quoted_message_id'],
         'updated_at' => $data['updated_at'],
         'has_media' => $data['has_media'],
         'media' => json_encode((object)$data['media']),
@@ -93,7 +97,7 @@ function handle_message_updated(WP_REST_Request $request) {
     global $wpdb, $table_name;
     // Where clause to specify the row to update
     $where = array(
-        'unique_id' => $data['unique_id']
+        'message_id' => $data['message_id']
     );
 
     // Update the row in the table
@@ -122,7 +126,7 @@ function handle_message_deleted(WP_REST_Request $request) {
     global $wpdb, $table_name;
     // Where clause to specify the row to update
     $where = array(
-        'unique_id' => $data['unique_id']
+        'message_id' => $data['message_id']
     );
 
     // Update the row in the table
@@ -189,6 +193,6 @@ function periskope_get_messages( WP_REST_Request $request ) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Cache-Control: post-check=0, pre-check=0', false);
     header('Pragma: no-cache');
-    $results = $wpdb->get_results( "SELECT * FROM $table_name WHERE ISNULL(is_deleted) ORDER BY timestamp ASC", ARRAY_A );
+    $results = $wpdb->get_results( "SELECT a.*, b.message_id as quote_message_id, b.author as quote_author, b.body as quote_body, b.has_media as quote_has_media, b.media as quote_media FROM $table_name as a LEFT JOIN $table_name as b ON a.quoted_message_id = b.message_id WHERE ISNULL(a.is_deleted) ORDER BY a.timestamp ASC", ARRAY_A );
     return new WP_REST_Response( $results, 200 );
 }

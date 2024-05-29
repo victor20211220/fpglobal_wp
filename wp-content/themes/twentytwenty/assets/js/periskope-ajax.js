@@ -17,11 +17,30 @@ jQuery(document).ready(function ($) {
 
             data.forEach(function (row) {
                 var messageClass = row.from_me == 1 ? 'sent' : 'received';
+                var quoteContent = '';
                 var mediaContent = '';
 
                 // Parse and format the author phone number
                 var author = formatPhoneNumber(row.author);
                 var timestamp = formatTimestamp(row.timestamp);
+
+                if (row.has_quoted_msg !== "0" && row.quote_message_id) {
+                    var quoteAuthor = formatPhoneNumber(row.quote_author);
+                    quoteContent = `<a href="#${row.quote_message_id}" class="blockquote-link"><blockquote>
+                        <div class="author">${quoteAuthor}</div>
+                    `;
+                    if (row.quote_body) {
+                        quoteContent += `<div class="body">${row.quote_body}</div>`;
+                    } else if (row.quote_has_media !== "0") {
+                        const quoteMediaData = JSON.parse(row.quote_media);
+                        if (quoteMediaData.mimetype.startsWith('image/')) {
+                            quoteContent += `<div class="body">Image</div>`;
+                        } else if (quoteMediaData.mimetype.startsWith('audio/')) {
+                            quoteContent += `<div class="body">Audio</div>`;
+                        }
+                    }
+                    quoteContent += `</blockquote></a>`;
+                }
 
                 if (row.has_media !== "0" && row.media) {
                     var mediaData = JSON.parse(row.media);
@@ -35,7 +54,8 @@ jQuery(document).ready(function ($) {
                 }
 
                 var message = `
-                    <div class="message ${messageClass}">
+                    <div class="message ${messageClass}" id="${row.message_id}">
+                        ${quoteContent}
                         <div class="author">${author}</div>
                         <div class="body">${row.body}</div>
                         ${mediaContent}

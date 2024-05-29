@@ -771,5 +771,7 @@ function enqueue_periskope_scripts() {
         'ajax_url' => rest_url( 'periskope/v1/messages' ),
         'nonce'    => wp_create_nonce( 'wp_rest' )
     ));
+
+    wp_enqueue_style( 'periskope-style', get_template_directory_uri() . '/assets/css/periskope.css' );
 }
 add_action( 'wp_enqueue_scripts', 'enqueue_periskope_scripts' );
