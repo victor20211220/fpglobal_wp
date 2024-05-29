@@ -301,7 +301,7 @@ function periskope_get_messages(WP_REST_Request $request)
         "SELECT a.*, b.message_id as quote_message_id, b.author as quote_author, b.body as quote_body, b.has_media as quote_has_media, b.media as quote_media
         FROM $table_name as a
         LEFT JOIN $table_name as b ON a.quoted_message_id = b.message_id
-        WHERE ISNULL(a.is_deleted) AND a.body != '$autoreply_message_body' $ $hashtagFilter
+        WHERE ISNULL(a.is_deleted) AND a.body != '$autoreply_message_body' $hashtagFilter
         ORDER BY a.timestamp DESC
         LIMIT %d OFFSET %d",
         $limit,
