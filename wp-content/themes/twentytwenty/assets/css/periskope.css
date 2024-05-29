@@ -14,6 +14,7 @@
     height: 80vh;
     display: flex;
     flex-direction: column;
+    margin-bottom: 50px;
 }
 
 .message {
@@ -53,7 +54,6 @@
 }
 
 .message .timestamp {
-    font-size: 0.8em;
     color: #999;
     font-size: 10px;
     line-height: 12px;
@@ -80,3 +80,19 @@ blockquote {
     text-decoration: none;
     color: #999;
 }
+#loading {
+    text-align: center;
+    padding: 10px;
+    font-size: 16px;
+    color: #888;
+}
+#hastagFilterDiv{
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    margin-bottom: 20px;
+}
+#hashtag-filter{
+    width: 100%;
+}
+
