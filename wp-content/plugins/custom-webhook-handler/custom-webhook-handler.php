@@ -189,6 +189,6 @@ function periskope_get_messages( WP_REST_Request $request ) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Cache-Control: post-check=0, pre-check=0', false);
     header('Pragma: no-cache');
-    $results = $wpdb->get_results( "SELECT * FROM $table_name ORDER BY timestamp ASC", ARRAY_A );
+    $results = $wpdb->get_results( "SELECT * FROM $table_name WHERE ISNULL(is_deleted) ORDER BY timestamp ASC", ARRAY_A );
     return new WP_REST_Response( $results, 200 );
 }
