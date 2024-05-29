@@ -765,13 +765,13 @@ function modify_read_more_link() {
 add_filter( 'the_content_more_link', 'modify_read_more_link' );
 
 function enqueue_periskope_scripts() {
-    wp_enqueue_script( 'periskope-ajax', get_template_directory_uri() . '/assets/js/periskope-ajax.js', array( 'jquery' ), null, true );
+    wp_enqueue_script( 'periskope-ajax', get_template_directory_uri() . '/assets/js/periskope-ajax.js?v='.time(), array( 'jquery' ), null, true );
 
     wp_localize_script( 'periskope-ajax', 'periskope_ajax_obj', array(
         'ajax_url' => rest_url( 'periskope/v1/messages' ),
         'nonce'    => wp_create_nonce( 'wp_rest' )
     ));
 
-    wp_enqueue_style( 'periskope-style', get_template_directory_uri() . '/assets/css/periskope.css' );
+    wp_enqueue_style( 'periskope-style', get_template_directory_uri() . '/assets/css/periskope.css?v='.time() );
 }
 add_action( 'wp_enqueue_scripts', 'enqueue_periskope_scripts' );
