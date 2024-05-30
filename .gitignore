@@ -49,3 +49,4 @@ wp-config.php
 #/wp-content/themes
 
 /.idea
+error_log
