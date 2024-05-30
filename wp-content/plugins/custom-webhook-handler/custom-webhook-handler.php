@@ -170,7 +170,7 @@ function checkData($params)
     if ($data['org_id'] !== $org_id || $data['chat_id'] !== $chat_id) {
         return new WP_REST_Response('Another group/chat message received', 200);
     }
-    if ($params['event_type'] !== "message.deleted") {
+    if ($params['event_type'] !== "message.deleted" && site_url() !== "http://127.0.0.13") { // add local check
         $message_body = $data['body'];
         $has_region_hashtag = false;
         $has_challenge_hashtag = false;
