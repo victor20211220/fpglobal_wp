@@ -52,7 +52,7 @@ jQuery(document).ready(function($) {
                     }
 
                     var chatContainer = $('#chat-container');
-                    var storageDomain = "https://wvtpktbhobaopdiawdli.supabase.co/";
+                    var storageDomain = "";
 
                     data.forEach(function(row) {
                         var messageClass = row.from_me == 1 ? 'sent' : 'received';

@@ -13,7 +13,27 @@ $hashtags = $wpdb->get_results( "SELECT name FROM $hashtags_table", ARRAY_A );
 
 <div id="primary" class="content-area">
     <main id="main" class="site-main" role="main">
-        <h3 class="text-center">Periskope Messages</h3>
+        <header class="entry-header has-text-align-center header-footer-group">
+
+	<div class="entry-header-inner section-inner medium">
+
+		        <?php
+        the_title( '<h1 class="entry-title">', '</h1>' );
+        ?>
+	</div><!-- .entry-header-inner -->
+
+</header>
+
+		<div class="entry-content">
+			
+			<?php
+			if ( is_search() || ! is_singular() && 'summary' === get_theme_mod( 'blog_content', 'full' ) ) {
+				the_excerpt();
+			} else {
+				the_content( __( 'Continue reading', 'twentytwenty' ) );
+			}
+			?>
+		</div><!-- .entry-content -->
         <div id="hastagFilterDiv">
             <select id="hashtag-filter" multiple="multiple">
                 <?php foreach($hashtags as $hashtag): ?>

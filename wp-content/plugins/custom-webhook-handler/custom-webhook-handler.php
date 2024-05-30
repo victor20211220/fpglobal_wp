@@ -10,7 +10,7 @@ $org_phone = "41766998778";
 $token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCIgOiAiODQwZDcxMDQtZGM1MC00YjU5LWEzMTAtYzFlMDZiMzkyYmVhIiwgInJvbGUiIDogImFwaSIsICJ0eXBlIiA6ICJhcGkiLCAibmFtZSIgOiAid29yZHByZXNzIiwgImV4cCIgOiAyMDMyMDI5MjY3LjU0MDAxNCwgImlhdCIgOiAxNzE2NDk2NDY3LjU0MDAxNCwgInN1YiIgOiAiOGM4MTU3ODYtM2I2Ni00MDZmLWJhMTMtOWQzY2JkOGMxOGQ2IiwgImlzcyIgOiAicGVyaXNrb3BlLmFwcCJ9.vjF-b9mrzYvTaVHXKWWKi32mFJyoB6F9Gt3Br7LUsuM";
 $org_id = "8c815786-3b66-406f-ba13-9d3cbd8c18d6";
 $chat_id = "120363302018317627@g.us";
-$storage_domain = "https://wvtpktbhobaopdiawdli.supabase.co/";
+$storage_domain = "";
 $table_name = $wpdb->prefix . 'periskope_messages';
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
