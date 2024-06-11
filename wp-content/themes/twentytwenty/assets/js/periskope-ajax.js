@@ -1,13 +1,13 @@
-var offset = 0;
-var limit = 10;
-var loading = false;
-var allLoaded = false;
-const $hashTagFilter = $('#hashtag-filter');
-const $chatContainer = $('#chat-container');
-var $loading = $('#loading');
-var selectedHashtags = $hashTagFilter.val();
 jQuery(document).ready(function ($) {
     if (!$('#hastagFilterDiv').length) return;
+    offset = 0;
+    limit = 10;
+    loading = false;
+    allLoaded = false;
+    $hashTagFilter = $('#hashtag-filter');
+    $chatContainer = $('#chat-container');
+    $loading = $('#loading');
+    selectedHashtags = $hashTagFilter.val();
 
     // Initialize Select2
     $hashTagFilter.select2({
