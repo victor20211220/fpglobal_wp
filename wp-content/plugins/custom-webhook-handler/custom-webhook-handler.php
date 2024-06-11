@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 $hashtags_table = $wpdb->prefix . 'periskope_hashtags';
-$hashtags = $wpdb->get_results("SELECT name, type FROM $hashtags_table", ARRAY_A);
+$hashtags = $wpdb->get_results("SELECT id, name, type FROM $hashtags_table", ARRAY_A);
 // Initialize arrays to hold column names for type 0 and type 1
 $region_hash_tags = [];
 $challenge_hash_tags = [];
@@ -310,4 +310,38 @@ function periskope_get_messages(WP_REST_Request $request)
     ), ARRAY_A);
 
     return new WP_REST_Response($results, 200);
+}
+
+function periskope_shortcode($atts)
+{
+    $atts = shortcode_atts(array(
+        'id' => '',
+    ), $atts, 'periskope');
+
+    $hashtag_ids = !empty($atts['id']) ? array_map('intval', explode(',', $atts['id'])) : [];
+
+    return periskope_generate_html($hashtag_ids);
+}
+
+add_shortcode('periskope', 'periskope_shortcode');
+
+function periskope_generate_html($selected_hashtag_ids = [])
+{
+    global $hashtags;
+    ob_start();
+    ?>
+    <div id="hastagFilterDiv">
+        <select id="hashtag-filter" multiple="multiple">
+            <?php foreach ($hashtags as $hashtag):
+                $selected = in_array($hashtag['id'], $selected_hashtag_ids) ? "selected=\"selected\"" : "";
+                ?>
+                <option value="<?php echo esc_attr($hashtag['name']); ?>" <?php echo $selected ?>><?php echo esc_html($hashtag['name']); ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div id="chat-container">
+        <!-- Chat messages will be inserted here by Ajax -->
+    </div>
+    <?php
+    return ob_get_clean();
 }

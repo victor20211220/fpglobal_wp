@@ -765,6 +765,8 @@ function modify_read_more_link() {
 add_filter( 'the_content_more_link', 'modify_read_more_link' );
 
 function enqueue_periskope_scripts() {
+    wp_enqueue_script( 'select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', array( 'jquery' ), null, true );
+    wp_enqueue_script( 'libphonenumber', 'https://cdn.jsdelivr.net/npm/libphonenumber-js@1.9.28/bundle/libphonenumber-min.js', array( 'jquery' ), null, true );
     wp_enqueue_script( 'periskope-ajax', get_template_directory_uri() . '/assets/js/periskope-ajax.js?v='.time(), array( 'jquery' ), null, true );
 
     wp_localize_script( 'periskope-ajax', 'periskope_ajax_obj', array(
@@ -772,6 +774,7 @@ function enqueue_periskope_scripts() {
         'nonce'    => wp_create_nonce( 'wp_rest' )
     ));
 
+    wp_enqueue_style( 'select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css');
     wp_enqueue_style( 'periskope-style', get_template_directory_uri() . '/assets/css/periskope.css?v='.time() );
 }
 add_action( 'wp_enqueue_scripts', 'enqueue_periskope_scripts' );
