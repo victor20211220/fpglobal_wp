@@ -4,7 +4,7 @@ jQuery(document).ready(function($) {
     var limit = 10;
     var loading = false;
     var allLoaded = false;
-    var selectedHashtags = [];
+    var selectedHashtags = $('#hashtag-filter').val();
 
     // Initialize Select2
     $('#hashtag-filter').select2({
