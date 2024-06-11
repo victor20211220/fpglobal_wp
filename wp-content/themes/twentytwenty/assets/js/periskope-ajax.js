@@ -1,18 +1,21 @@
-jQuery(document).ready(function($) {
-    if(!$('#hastagFilterDiv').length) return;
-    var offset = 0;
-    var limit = 10;
-    var loading = false;
-    var allLoaded = false;
-    var selectedHashtags = $('#hashtag-filter').val();
+jQuery(document).ready(function ($) {
+    if (!$('#hastagFilterDiv').length) return;
+    offset = 0;
+    limit = 10;
+    loading = false;
+    allLoaded = false;
+    $hashTagFilter = $('#hashtag-filter');
+    $chatContainer = $('#chat-container');
+    $loading = $('#loading');
+    selectedHashtags = $hashTagFilter.val();
 
     // Initialize Select2
-    $('#hashtag-filter').select2({
+    $hashTagFilter.select2({
         placeholder: 'Type to search hashtags...'
     });
 
     // Event listener for changes in Select2
-    $('#hashtag-filter').on('change', function(e) {
+    $hashTagFilter.on('change', function () {
         selectedHashtags = $(this).val();
         offset = 0;
         allLoaded = false;
@@ -26,10 +29,11 @@ jQuery(document).ready(function($) {
 
         if (delay > 0) {
             // Show loading message
-            $('#chat-container').append('<div id="loading">Loading more messages...</div>');
+            $chatContainer.append('<div id="loading">Loading more messages...</div>');
+            $loading = $('#loading');
         }
 
-        setTimeout(function() {
+        setTimeout(function () {
             $.ajax({
                 url: periskope_ajax_obj.ajax_url,
                 method: 'GET',
@@ -38,25 +42,24 @@ jQuery(document).ready(function($) {
                     limit: limit,
                     hashtags: !selectedHashtags ? "" : selectedHashtags.join(',')
                 },
-                beforeSend: function(xhr) {
+                beforeSend: function (xhr) {
                     xhr.setRequestHeader('X-WP-Nonce', periskope_ajax_obj.nonce);
                 },
-                success: function(data) {
+                success: function (data) {
                     if (data.length < limit) {
                         allLoaded = true;
                     }
 
                     if (data.length === 0) {
                         loading = false;
-                        $('#loading').remove(); // Remove loading message
+                        $loading.remove(); // Remove loading message
                         return;
                     }
 
-                    var chatContainer = $('#chat-container');
                     var storageDomain = "";
 
-                    data.forEach(function(row) {
-                        var messageClass = row.from_me == 1 ? 'sent' : 'received';
+                    data.forEach(function (row) {
+                        var messageClass = row.from_me === "1" ? 'sent' : 'received';
                         var quoteContent = '';
                         var mediaContent = '';
 
@@ -102,16 +105,16 @@ jQuery(document).ready(function($) {
                                 <div class="timestamp">${timestamp}</div>
                             </div>
                         `;
-                        chatContainer.append(message);
+                        $chatContainer.append(message);
                     });
 
                     offset += limit;
-                    $('#loading').remove(); // Remove loading message
+                    $loading.remove(); // Remove loading message
                     loading = false;
                 },
-                error: function(error) {
+                error: function (error) {
                     console.log(error);
-                    $('#loading').remove(); // Remove loading message
+                    $loading.remove(); // Remove loading message
                     loading = false;
                 }
             });
@@ -122,8 +125,9 @@ jQuery(document).ready(function($) {
     loadMessages();
 
     // Infinite scroll with delay for subsequent loads
-    $('#chat-container').on('scroll', function() {
-        if ($('#chat-container').scrollTop() + $('#chat-container').innerHeight() >= $('#chat-container')[0].scrollHeight) {
+    $chatContainer.on('scroll', function () {
+        console.log("scrolling", "scrollTop + innerHeight: ", $chatContainer.scrollTop() + $chatContainer.innerHeight(),  "scrollHeight: ", $chatContainer[0].scrollHeight);
+        if ($chatContainer.scrollTop() + $chatContainer.innerHeight() >= $chatContainer[0].scrollHeight) {
             loadMessages(1000); // 2-second delay
         }
     });
@@ -137,7 +141,7 @@ jQuery(document).ready(function($) {
         var hiddenPart = '****';
 
         // Use the libphonenumber-js library to format the number
-        var formattedPhone = '';
+        let formattedPhone;
 
         try {
             // Parse the phone number using libphonenumber-js
