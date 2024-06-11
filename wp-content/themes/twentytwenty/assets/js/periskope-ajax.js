@@ -127,6 +127,7 @@ jQuery(document).ready(function($) {
     // Infinite scroll with delay for subsequent loads
     $chatContainer.on('scroll', function() {
         if ($chatContainer.scrollTop() + $chatContainer.innerHeight() >= $chatContainer[0].scrollHeight) {
+            debugger;
             loadMessages(1000); // 2-second delay
         }
     });
