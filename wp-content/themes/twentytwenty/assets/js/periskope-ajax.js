@@ -6,7 +6,7 @@ jQuery(document).ready(function($) {
     var allLoaded = false;
     const $hashTagFilter = $('#hashtag-filter');
     const $chatContainer = $('#chat-container');
-    const $loading = $('#loading');
+    var $loading = $('#loading');
     var selectedHashtags = $hashTagFilter.val();
 
     // Initialize Select2
@@ -30,6 +30,7 @@ jQuery(document).ready(function($) {
         if (delay > 0) {
             // Show loading message
             $chatContainer.append('<div id="loading">Loading more messages...</div>');
+            $loading = $('#loading');
         }
 
         setTimeout(function() {
