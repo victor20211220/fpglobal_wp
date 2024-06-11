@@ -126,11 +126,14 @@ jQuery(document).ready(function ($) {
 
     // Infinite scroll with delay for subsequent loads
     $chatContainer.on('scroll', function () {
-        console.log("scrolling", "scrollTop + innerHeight: ", $chatContainer.scrollTop() + $chatContainer.innerHeight(),  "scrollHeight: ", $chatContainer[0].scrollHeight);
-        if ($chatContainer.scrollTop() + $chatContainer.innerHeight() >= $chatContainer[0].scrollHeight) {
+        console.log("scrolling", "scrollTop + innerHeight: ", $chatContainer.scrollTop() + $chatContainer.innerHeight(), "scrollHeight: ", $chatContainer[0].scrollHeight);
+
+        var tolerance = 5; // Adjust this value as needed
+        if ($chatContainer.scrollTop() + $chatContainer.innerHeight() >= $chatContainer[0].scrollHeight - tolerance) {
             loadMessages(1000); // 2-second delay
         }
     });
+
 
     function formatPhoneNumber(phone) {
         // Remove '@c.us'
