@@ -1,13 +1,13 @@
-jQuery(document).ready(function($) {
-    if(!$('#hastagFilterDiv').length) return;
-    var offset = 0;
-    var limit = 10;
-    var loading = false;
-    var allLoaded = false;
-    const $hashTagFilter = $('#hashtag-filter');
-    const $chatContainer = $('#chat-container');
-    var $loading = $('#loading');
-    var selectedHashtags = $hashTagFilter.val();
+var offset = 0;
+var limit = 10;
+var loading = false;
+var allLoaded = false;
+const $hashTagFilter = $('#hashtag-filter');
+const $chatContainer = $('#chat-container');
+var $loading = $('#loading');
+var selectedHashtags = $hashTagFilter.val();
+jQuery(document).ready(function ($) {
+    if (!$('#hastagFilterDiv').length) return;
 
     // Initialize Select2
     $hashTagFilter.select2({
@@ -15,7 +15,7 @@ jQuery(document).ready(function($) {
     });
 
     // Event listener for changes in Select2
-    $hashTagFilter.on('change', function() {
+    $hashTagFilter.on('change', function () {
         selectedHashtags = $(this).val();
         offset = 0;
         allLoaded = false;
@@ -33,7 +33,7 @@ jQuery(document).ready(function($) {
             $loading = $('#loading');
         }
 
-        setTimeout(function() {
+        setTimeout(function () {
             $.ajax({
                 url: periskope_ajax_obj.ajax_url,
                 method: 'GET',
@@ -42,10 +42,10 @@ jQuery(document).ready(function($) {
                     limit: limit,
                     hashtags: !selectedHashtags ? "" : selectedHashtags.join(',')
                 },
-                beforeSend: function(xhr) {
+                beforeSend: function (xhr) {
                     xhr.setRequestHeader('X-WP-Nonce', periskope_ajax_obj.nonce);
                 },
-                success: function(data) {
+                success: function (data) {
                     if (data.length < limit) {
                         allLoaded = true;
                     }
@@ -58,7 +58,7 @@ jQuery(document).ready(function($) {
 
                     var storageDomain = "";
 
-                    data.forEach(function(row) {
+                    data.forEach(function (row) {
                         var messageClass = row.from_me === "1" ? 'sent' : 'received';
                         var quoteContent = '';
                         var mediaContent = '';
@@ -112,7 +112,7 @@ jQuery(document).ready(function($) {
                     $loading.remove(); // Remove loading message
                     loading = false;
                 },
-                error: function(error) {
+                error: function (error) {
                     console.log(error);
                     $loading.remove(); // Remove loading message
                     loading = false;
@@ -125,7 +125,7 @@ jQuery(document).ready(function($) {
     loadMessages();
 
     // Infinite scroll with delay for subsequent loads
-    $chatContainer.on('scroll', function() {
+    $chatContainer.on('scroll', function () {
         if ($chatContainer.scrollTop() + $chatContainer.innerHeight() >= $chatContainer[0].scrollHeight) {
             debugger;
             loadMessages(1000); // 2-second delay
