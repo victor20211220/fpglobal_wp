@@ -294,7 +294,7 @@ function periskope_get_messages(WP_REST_Request $request)
         foreach ($hashtagArray as $hashtag) {
             $hashtagFilterParts[] = $wpdb->prepare("a.body LIKE %s", '%' . $wpdb->esc_like($hashtag) . '%');
         }
-        $hashtagFilter = 'AND (' . implode(' OR ', $hashtagFilterParts) . ')';
+        $hashtagFilter = 'AND (' . implode(' AND ', $hashtagFilterParts) . ')';
     }
     $autoreply_message_filter = 'AND NOT(a.has_quoted_msg = 1 AND a.body like "%Please repost your message with a region hashtag%")';
 
