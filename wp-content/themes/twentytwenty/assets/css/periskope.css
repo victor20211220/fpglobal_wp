@@ -94,6 +94,7 @@ blockquote {
     margin: 0 auto;
     width: 100%;
     margin-bottom: 20px;
+    position: relative;
 }
 
 #hashtag-filter {
