@@ -297,6 +297,7 @@ function periskope_get_messages(WP_REST_Request $request)
 
         function get_all_child_ids($parent_ids, $wpdb)
         {
+            global $hashtags_table;
             $all_ids = [];
 
             // Ensure parent_ids is an array
@@ -309,7 +310,7 @@ function periskope_get_messages(WP_REST_Request $request)
 
             // Prepare the query to fetch child IDs
             $placeholders = implode(',', array_fill(0, count($parent_ids), '%d'));
-            $query = "SELECT id FROM wpky_periskope_hashtags WHERE parent_id IN ($placeholders)";
+            $query = "SELECT id FROM $hashtags_table WHERE parent_id IN ($placeholders)";
 
             // Execute the query
             $child_ids = $wpdb->get_col($wpdb->prepare($query, ...$parent_ids));
@@ -325,6 +326,7 @@ function periskope_get_messages(WP_REST_Request $request)
 
         function build_filter_query($parent_ids, $wpdb)
         {
+            global $hashtags_table;
             $filter_blocks = [];
 
             foreach ($parent_ids as $id) {
@@ -333,7 +335,7 @@ function periskope_get_messages(WP_REST_Request $request)
 
                 // Create an "OR" block for these related IDs
                 $placeholders = implode(',', array_fill(0, count($related_ids), '%d'));
-                $query = "SELECT name FROM wpky_periskope_hashtags WHERE id IN ($placeholders)";
+                $query = "SELECT name FROM $hashtags_table WHERE id IN ($placeholders)";
                 $names = $wpdb->get_col($wpdb->prepare($query, ...$related_ids));
 
                 if (!empty($names)) {
