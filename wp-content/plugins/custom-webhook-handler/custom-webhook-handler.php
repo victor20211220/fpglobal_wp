@@ -201,7 +201,7 @@ function checkData($params)
     global $token, $org_phone, $autoreply_message_body, $autoreply_audio_message_body;
 
     curl_setopt_array($curl, array(
-        CURLOPT_URL => 'https://api.periskope.app/v1/message/send',
+        CURLOPT_URL => 'http://35.227.206.185/v1/message/send',
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_SSL_VERIFYPEER => false,
