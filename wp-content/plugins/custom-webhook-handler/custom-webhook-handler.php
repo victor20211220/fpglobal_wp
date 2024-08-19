@@ -9,7 +9,7 @@ global $wpdb;
 $org_phone = "41766998778";
 $token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCIgOiAiODQwZDcxMDQtZGM1MC00YjU5LWEzMTAtYzFlMDZiMzkyYmVhIiwgInJvbGUiIDogImFwaSIsICJ0eXBlIiA6ICJhcGkiLCAibmFtZSIgOiAid29yZHByZXNzIiwgImV4cCIgOiAyMDMyMDI5MjY3LjU0MDAxNCwgImlhdCIgOiAxNzE2NDk2NDY3LjU0MDAxNCwgInN1YiIgOiAiOGM4MTU3ODYtM2I2Ni00MDZmLWJhMTMtOWQzY2JkOGMxOGQ2IiwgImlzcyIgOiAicGVyaXNrb3BlLmFwcCJ9.vjF-b9mrzYvTaVHXKWWKi32mFJyoB6F9Gt3Br7LUsuM";
 $org_id = "8c815786-3b66-406f-ba13-9d3cbd8c18d6";
-$chat_id = "120363302018317627@g.us";
+$chat_id = "120363321968692144@g.us"; //120363302018317627@g.us
 $storage_domain = "";
 $table_name = $wpdb->prefix . 'periskope_messages';
 if (!defined('ABSPATH')) {
@@ -31,6 +31,7 @@ foreach ($hashtags as $row) {
     }
 }
 $autoreply_message_body = "Please repost your message with a region hashtag (choices: " . implode(", ", $region_hash_tags) . ") and a challenge-name hashtag (choices: " . implode(", ", $challenge_hash_tags) . ")";
+$autoreply_audio_message_body = "Please add a region hashtag (choices: " . implode(", ", $region_hash_tags) . ") and a challenge-name hashtag (choices: " . implode(", ", $challenge_hash_tags) . ") to your audio message by replying/quoting your own audio message";
 // Hook to initialize our webhook handling
 add_action('rest_api_init', function () {
     register_rest_route('webhook/v1', '/message_created', array(
@@ -170,70 +171,71 @@ function checkData($params)
     if ($data['org_id'] !== $org_id || $data['chat_id'] !== $chat_id) {
         return new WP_REST_Response('Another group/chat message received', 200);
     }
-    if ($params['event_type'] !== "message.deleted" && site_url() !== "http://127.0.0.13") { // add local check
-        $message_body = $data['body'];
-        $has_region_hashtag = false;
-        $has_challenge_hashtag = false;
-        global $region_hash_tags, $challenge_hash_tags;
-        // Check for type 0 hashtags
-        foreach ($region_hash_tags as $hashtag) {
-            if (stripos($message_body, $hashtag) !== false) {
-                $has_region_hashtag = true;
-                break;
-            }
-        }
-
-// Check for type 1 hashtags
-        foreach ($challenge_hash_tags as $hashtag) {
-            if (stripos($message_body, $hashtag) !== false) {
-                $has_challenge_hashtag = true;
-                break;
-            }
-        }
-        // Determine if $a includes at least one hashtag from each type
-        if (!($has_region_hashtag && $has_challenge_hashtag)) {
-            $curl = curl_init();
-            global $token, $org_phone, $autoreply_message_body;
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => 'https://api.periskope.app/v1/message/send',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_SSL_VERIFYHOST => false,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_ENCODING => '',
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 0,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => '{
-                    "reply_to": "' . $data['message_id'] . '",
-                    "message": "' . $autoreply_message_body . '",
-                    "chat_id": "' . $chat_id . '"
-                }',
-                CURLOPT_HTTPHEADER => array(
-                    'x-phone: ' . $org_phone,
-                    'Content-Type: application/json',
-                    'Accept: application/json',
-                    'Authorization: Bearer ' . $token,
-                ),
-            ));
-            $response = curl_exec($curl);
-            // Check for errors
-            if (curl_errno($curl)) {
-                $log_message = 'Curl error: ' . curl_error($curl);
-            } else {
-                // Get the HTTP status code
-                $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-
-                // Output the HTTP status code
-                $log_message = "HTTP Status Code: " . $http_code;
-            }
-            curl_close($curl);
-
-            // Output the HTTP status code
-            error_log("autoreply message curl result: " . $log_message);
+//    if ($params['event_type'] === "message.deleted" && site_url() === "http://127.0.0.13") { // add local check
+    if ($params['event_type'] === "message.deleted") return true;
+    $message_body = $data['body'];
+    $has_region_hashtag = false;
+    $has_challenge_hashtag = false;
+    global $region_hash_tags, $challenge_hash_tags;
+    // Check for type 0 hashtags
+    foreach ($region_hash_tags as $hashtag) {
+        if (stripos($message_body, $hashtag) !== false) {
+            $has_region_hashtag = true;
+            break;
         }
     }
+
+// Check for type 1 hashtags
+    foreach ($challenge_hash_tags as $hashtag) {
+        if (stripos($message_body, $hashtag) !== false) {
+            $has_challenge_hashtag = true;
+            break;
+        }
+    }
+    // Determine if $a includes at least one hashtag from each type
+    $hasHashTags = $has_region_hashtag && $has_challenge_hashtag;
+    $isAudioMsg = $data['has_media'] && strpos(json_encode((object)$data['media'])['mimetype'], 'audio') === 0;
+    if ($hasHashTags) return true;
+    $curl = curl_init();
+    global $token, $org_phone, $autoreply_message_body, $autoreply_audio_message_body;
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://api.periskope.app/v1/message/send',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => '{
+                    "reply_to": "' . $data['message_id'] . '",
+                    "message": "' . $isAudioMsg ? $autoreply_audio_message_body : $autoreply_message_body . '",
+                    "chat_id": "' . $data['author'] . '"
+                }',
+        CURLOPT_HTTPHEADER => array(
+            'x-phone: ' . $org_phone,
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'Authorization: Bearer ' . $token,
+        ),
+    ));
+    $response = curl_exec($curl);
+    // Check for errors
+    if (curl_errno($curl)) {
+        $log_message = 'Curl error: ' . curl_error($curl);
+    } else {
+        // Get the HTTP status code
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        // Output the HTTP status code
+        $log_message = "HTTP Status Code: " . $http_code;
+    }
+    curl_close($curl);
+
+    // Output the HTTP status code
+    error_log("autoreply message curl result: " . $log_message);
     return true;
 }
 
@@ -277,7 +279,7 @@ function send_message_to_endpoint($url, $message)
 
 function periskope_get_messages(WP_REST_Request $request)
 {
-    global $wpdb, $table_name, $autoreply_message_body;
+    global $wpdb, $table_name;
     // Set headers to prevent caching
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Cache-Control: post-check=0, pre-check=0', false);
@@ -290,11 +292,67 @@ function periskope_get_messages(WP_REST_Request $request)
     $hashtagFilter = '';
     if (!empty($hashtags)) {
         $hashtagArray = explode(',', $hashtags);
-        $hashtagFilterParts = array();
-        foreach ($hashtagArray as $hashtag) {
-            $hashtagFilterParts[] = $wpdb->prepare("a.body LIKE %s", '%' . $wpdb->esc_like($hashtag) . '%');
+
+        function get_all_child_ids($parent_ids, $wpdb)
+        {
+            $all_ids = [];
+
+            // Ensure parent_ids is an array
+            if (!is_array($parent_ids)) {
+                $parent_ids = [$parent_ids];
+            }
+
+            // Add the parent_ids to the all_ids array
+            $all_ids = array_merge($all_ids, $parent_ids);
+
+            // Prepare the query to fetch child IDs
+            $placeholders = implode(',', array_fill(0, count($parent_ids), '%d'));
+            $query = "SELECT id FROM wpky_periskope_hashtags WHERE parent_id IN ($placeholders)";
+
+            // Execute the query
+            $child_ids = $wpdb->get_col($wpdb->prepare($query, ...$parent_ids));
+
+            // If there are child IDs, recursively fetch their children
+            if (!empty($child_ids)) {
+                $child_ids = get_all_child_ids($child_ids, $wpdb);
+                $all_ids = array_merge($all_ids, $child_ids);
+            }
+
+            return $all_ids;
         }
-        $hashtagFilter = 'AND (' . implode(' AND ', $hashtagFilterParts) . ')';
+
+        function build_filter_query($parent_ids, $wpdb)
+        {
+            $filter_blocks = [];
+
+            foreach ($parent_ids as $id) {
+                // Get all related IDs (including children) for the current ID
+                $related_ids = get_all_child_ids([$id], $wpdb);
+
+                // Create an "OR" block for these related IDs
+                $placeholders = implode(',', array_fill(0, count($related_ids), '%d'));
+                $query = "SELECT name FROM wpky_periskope_hashtags WHERE id IN ($placeholders)";
+                $names = $wpdb->get_col($wpdb->prepare($query, ...$related_ids));
+
+                if (!empty($names)) {
+                    // Manually escape the names and build the LIKE conditions
+                    $name_conditions = array_map(function ($name) use ($wpdb) {
+                        // Escape any special characters except %
+                        $escaped_name = addslashes($name);
+                        return "a.body LIKE '%" . $escaped_name . "%'";
+                    }, $names);
+                    $filter_blocks[] = '(' . implode(' OR ', $name_conditions) . ')';
+                }
+            }
+
+            // Join all filter blocks with "AND"
+            $final_query = implode(' AND ', $filter_blocks);
+
+            return $final_query;
+        }
+
+        // Construct the final WHERE clause for the query
+        $hashtagFilter = 'AND (' . build_filter_query($hashtagArray, $wpdb) . ')';
     }
     $autoreply_message_filter = 'AND NOT(a.has_quoted_msg = 1 AND a.body like "%Please repost your message with a region hashtag%")';
 
@@ -335,7 +393,7 @@ function periskope_generate_html($selected_hashtag_ids = [])
             <?php foreach ($hashtags as $hashtag):
                 $selected = in_array($hashtag['id'], $selected_hashtag_ids) ? "selected=\"selected\"" : "";
                 ?>
-                <option value="<?php echo esc_attr($hashtag['name']); ?>" <?php echo $selected ?>><?php echo esc_html($hashtag['name']); ?></option>
+                <option value="<?php echo esc_attr($hashtag['id']); ?>" <?php echo $selected ?>><?php echo esc_html($hashtag['name']); ?></option>
             <?php endforeach; ?>
         </select>
     </div>
