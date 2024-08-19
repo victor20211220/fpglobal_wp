@@ -193,11 +193,13 @@ function checkData($params)
         }
     }
     // Determine if $a includes at least one hashtag from each type
+//    error_log(print_r($data, true));
     $hasHashTags = $has_region_hashtag && $has_challenge_hashtag;
-    $isAudioMsg = $data['has_media'] && strpos(json_encode((object)$data['media'])['mimetype'], 'audio') === 0;
+    $isAudioMsg = $data['has_media'] && (strpos($data['media']['mimetype'], 'audio') === 0);
     if ($hasHashTags) return true;
     $curl = curl_init();
     global $token, $org_phone, $autoreply_message_body, $autoreply_audio_message_body;
+
     curl_setopt_array($curl, array(
         CURLOPT_URL => 'https://api.periskope.app/v1/message/send',
         CURLOPT_RETURNTRANSFER => true,
@@ -211,7 +213,7 @@ function checkData($params)
         CURLOPT_CUSTOMREQUEST => 'POST',
         CURLOPT_POSTFIELDS => '{
                     "reply_to": "' . $data['message_id'] . '",
-                    "message": "' . $isAudioMsg ? $autoreply_audio_message_body : $autoreply_message_body . '",
+                    "message": "' . ($isAudioMsg ? $autoreply_audio_message_body : $autoreply_message_body). '",
                     "chat_id": "' . $data['author'] . '"
                 }',
         CURLOPT_HTTPHEADER => array(

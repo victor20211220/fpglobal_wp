@@ -11,7 +11,8 @@ jQuery(document).ready(function ($) {
 
     // Initialize Select2
     $hashTagFilter.select2({
-        placeholder: 'Type to search hashtags...'
+        placeholder: 'Type to search hashtags...',
+        dropdownParent: $hashTagFilter.parent()
     });
 
     // Event listener for changes in Select2
