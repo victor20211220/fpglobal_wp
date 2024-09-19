@@ -16,7 +16,16 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 $hashtags_table = $wpdb->prefix . 'periskope_hashtags';
-$hashtags = $wpdb->get_results("SELECT id, name, type FROM $hashtags_table", ARRAY_A);
+
+function getHashTags($localeCheck = true)
+{
+    global $hashtags_table, $wpdb;
+    $locale = get_locale();
+    $where = $localeCheck ? "WHERE locale = '" . $locale . "'" : "";
+    $hashtags = $wpdb->get_results("SELECT id, name, type FROM $hashtags_table".$where, ARRAY_A);
+    return $hashtags;
+}
+$hashtags = getHashTags(false);
 // Initialize arrays to hold column names for type 0 and type 1
 $region_hash_tags = [];
 $challenge_hash_tags = [];
@@ -30,8 +39,8 @@ foreach ($hashtags as $row) {
         $challenge_hash_tags[] = $name;
     }
 }
-$autoreply_message_body = "Please repost your message with a region hashtag (choices: " . implode(", ", $region_hash_tags) . ") and a challenge-name hashtag (choices: " . implode(", ", $challenge_hash_tags) . ")";
-$autoreply_audio_message_body = "Please add a region hashtag (choices: " . implode(", ", $region_hash_tags) . ") and a challenge-name hashtag (choices: " . implode(", ", $challenge_hash_tags) . ") to your audio message by replying/quoting your own audio message";
+$autoreply_message_body = "See https://fpglobal.ca/hashtags/ for a list of all hashtags.";
+
 // Hook to initialize our webhook handling
 add_action('rest_api_init', function () {
     register_rest_route('webhook/v1', '/message_created', array(
@@ -198,7 +207,7 @@ function checkData($params)
     $isAudioMsg = $data['has_media'] && (strpos($data['media']['mimetype'], 'audio') === 0);
     if ($hasHashTags) return true;
     $curl = curl_init();
-    global $token, $org_phone, $autoreply_message_body, $autoreply_audio_message_body;
+    global $token, $org_phone, $autoreply_message_body;
 
     curl_setopt_array($curl, array(
         CURLOPT_URL => 'http://35.227.206.185/v1/message/send',
@@ -213,7 +222,7 @@ function checkData($params)
         CURLOPT_CUSTOMREQUEST => 'POST',
         CURLOPT_POSTFIELDS => '{
                     "reply_to": "' . $data['message_id'] . '",
-                    "message": "' . ($isAudioMsg ? $autoreply_audio_message_body : $autoreply_message_body). '",
+                    "message": "' . $autoreply_message_body . '",
                     "chat_id": "' . $data['author'] . '"
                 }',
         CURLOPT_HTTPHEADER => array(
@@ -281,7 +290,8 @@ function send_message_to_endpoint($url, $message)
 
 function periskope_get_messages(WP_REST_Request $request)
 {
-    global $wpdb, $table_name;
+    global $wpdb, $table_name, $hashtags_table;
+    $hashtags = getHashTags();
     // Set headers to prevent caching
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Cache-Control: post-check=0, pre-check=0', false);
@@ -289,47 +299,71 @@ function periskope_get_messages(WP_REST_Request $request)
 
     $offset = $request->get_param('offset');
     $limit = $request->get_param('limit');
-    $hashtags = $request->get_param('hashtags');
+    $hashtagsStr = $request->get_param('hashtags');
 
     $hashtagFilter = '';
-    if (!empty($hashtags)) {
-        $hashtagArray = explode(',', $hashtags);
+    $hashtagsAry = [];
+    if (!empty($hashtagsStr)) {
+        $hashtagsAry = explode(',', $hashtagsStr);
+    } else {
+        foreach ($hashtags as $hashtag) {
+            $hashtagsAry[] = $hashtag['id'];
+        }
+    }
 
-        function get_all_child_ids($parent_ids, $wpdb)
-        {
-            global $hashtags_table;
-            $all_ids = [];
 
-            // Ensure parent_ids is an array
-            if (!is_array($parent_ids)) {
-                $parent_ids = [$parent_ids];
-            }
+    $allSameHashTags = [];
+    foreach ($hashtagsAry as $hashtag) {
+        $oneSameHashTags = [$hashtag];
+        $language = $wpdb->get_results("SELECT language FROM $hashtags_table WHERE id = " . $hashtag, ARRAY_A)[0]['language'];
+        if (!$language) {
+            $allSameHashTags[] = $oneSameHashTags;
+            continue;
+        }
+        $sameHashTags = $wpdb->get_results("SELECT id FROM $hashtags_table WHERE language = '" . $language . "' AND id != " . $hashtag, ARRAY_A);
+        foreach ($sameHashTags as $sameHashTag) {
+            $oneSameHashTags[] = $sameHashTag['id'];
+        }
+        $allSameHashTags[] = $oneSameHashTags;
+    }
 
-            // Add the parent_ids to the all_ids array
-            $all_ids = array_merge($all_ids, $parent_ids);
 
-            // Prepare the query to fetch child IDs
-            $placeholders = implode(',', array_fill(0, count($parent_ids), '%d'));
-            $query = "SELECT id FROM $hashtags_table WHERE parent_id IN ($placeholders)";
+    function get_all_child_ids($parent_ids, $wpdb)
+    {
+        global $hashtags_table;
+        $all_ids = [];
 
-            // Execute the query
-            $child_ids = $wpdb->get_col($wpdb->prepare($query, ...$parent_ids));
-
-            // If there are child IDs, recursively fetch their children
-            if (!empty($child_ids)) {
-                $child_ids = get_all_child_ids($child_ids, $wpdb);
-                $all_ids = array_merge($all_ids, $child_ids);
-            }
-
-            return $all_ids;
+        // Ensure parent_ids is an array
+        if (!is_array($parent_ids)) {
+            $parent_ids = [$parent_ids];
         }
 
-        function build_filter_query($parent_ids, $wpdb)
-        {
-            global $hashtags_table;
-            $filter_blocks = [];
+        // Add the parent_ids to the all_ids array
+        $all_ids = array_merge($all_ids, $parent_ids);
 
-            foreach ($parent_ids as $id) {
+        // Prepare the query to fetch child IDs
+        $placeholders = implode(',', array_fill(0, count($parent_ids), '%d'));
+        $query = "SELECT id FROM $hashtags_table WHERE parent_id IN ($placeholders)";
+
+        // Execute the query
+        $child_ids = $wpdb->get_col($wpdb->prepare($query, ...$parent_ids));
+
+        // If there are child IDs, recursively fetch their children
+        if (!empty($child_ids)) {
+            $child_ids = get_all_child_ids($child_ids, $wpdb);
+            $all_ids = array_merge($all_ids, $child_ids);
+        }
+
+        return $all_ids;
+    }
+
+    function build_filter_query($allSameHashTags, $wpdb)
+    {
+        global $hashtags_table;
+        $all_filter_blocks = [];
+        foreach ($allSameHashTags as $sameHashTag) {
+            $one_filter_block = [];
+            foreach ($sameHashTag as $id) {
                 // Get all related IDs (including children) for the current ID
                 $related_ids = get_all_child_ids([$id], $wpdb);
 
@@ -345,20 +379,22 @@ function periskope_get_messages(WP_REST_Request $request)
                         $escaped_name = addslashes($name);
                         return "a.body LIKE '%" . $escaped_name . "%'";
                     }, $names);
-                    $filter_blocks[] = '(' . implode(' OR ', $name_conditions) . ')';
+                    $one_filter_block[] = '(' . implode(' OR ', $name_conditions) . ')';
                 }
             }
-
-            // Join all filter blocks with "AND"
-            $final_query = implode(' AND ', $filter_blocks);
-
-            return $final_query;
+            $one_filter_block = implode(' OR ', $one_filter_block);
+            $all_filter_blocks[] = '(' . $one_filter_block . ')';
         }
-
-        // Construct the final WHERE clause for the query
-        $hashtagFilter = 'AND (' . build_filter_query($hashtagArray, $wpdb) . ')';
+        // Join all filter blocks with "AND"
+        $final_query = implode(' AND ', $all_filter_blocks);
+        return $final_query;
     }
-    $autoreply_message_filter = 'AND NOT(a.has_quoted_msg = 1 AND a.body like "%Please repost your message with a region hashtag%")';
+
+    // Construct the final WHERE clause for the query
+    $hashtagFilter = 'AND (' . build_filter_query($allSameHashTags, $wpdb) . ')';
+//    print_r($hashtagFilter);exit();
+    global $autoreply_message_body;
+    $autoreply_message_filter = 'AND NOT(a.has_quoted_msg = 1 AND a.body = "'.$autoreply_message_body.'")';
 
     $results = $wpdb->get_results($wpdb->prepare(
         "SELECT a.*, b.message_id as quote_message_id, b.author as quote_author, b.body as quote_body, b.has_media as quote_has_media, b.media as quote_media
@@ -370,7 +406,6 @@ function periskope_get_messages(WP_REST_Request $request)
         $limit,
         $offset
     ), ARRAY_A);
-
     return new WP_REST_Response($results, 200);
 }
 
@@ -389,7 +424,7 @@ add_shortcode('periskope', 'periskope_shortcode');
 
 function periskope_generate_html($selected_hashtag_ids = [])
 {
-    global $hashtags;
+    $hashtags = getHashTags();
     ob_start();
     ?>
     <div id="hastagFilterDiv">
@@ -407,3 +442,56 @@ function periskope_generate_html($selected_hashtag_ids = [])
     <?php
     return ob_get_clean();
 }
+
+function get_hashtag_hierarchy($parent_id = NULL, $type = NULL, $level = 0)
+{
+    global $wpdb, $hashtags_table;
+
+    if ($parent_id === NULL) {
+        // Handle the case when parent_id is NULL
+        $query = $wpdb->prepare("
+        SELECT id, name, type, parent_id 
+        FROM $hashtags_table 
+        WHERE parent_id IS NULL AND type = %d 
+        ORDER BY name ASC", $type);
+    } else {
+        // Handle the case when parent_id is a specific value
+        $query = $wpdb->prepare("
+        SELECT id, name, type, parent_id 
+        FROM $hashtags_table 
+        WHERE parent_id = %d AND type = %d 
+        ORDER BY name ASC", $parent_id, $type);
+    }
+    $rows = $wpdb->get_results($query);
+
+    // Build hierarchy recursively
+    $output = '';
+    foreach ($rows as $row) {
+        $indentation = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;', $level); // 4 non-breaking spaces for each level
+        $output .= $indentation . esc_html($row->name) . '<br>';
+        $output .= get_hashtag_hierarchy($row->id, $type, $level + 1); // Recursive call for children
+    }
+    return $output;
+}
+
+function display_hashtag_list()
+{
+    $output = '<div style="display: flex; justify-content: space-between;">';
+
+    // Fetch and display "challenge" (type = 1) hashtags
+    $output .= '<div><strong>Challenge</strong><br>';
+    $output .= get_hashtag_hierarchy(NULL, 1);
+    $output .= '</div>';
+
+    // Fetch and display "region" (type = 0) hashtags
+    $output .= '<div><strong>Region</strong><br>';
+    $output .= get_hashtag_hierarchy(NULL, 0);
+    $output .= '</div>';
+
+    $output .= '</div>';
+
+    return $output;
+}
+
+// Shortcode to display the hashtag list
+add_shortcode('list_hashtags', 'display_hashtag_list');
