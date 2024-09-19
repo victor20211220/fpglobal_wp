@@ -21,10 +21,11 @@ function getHashTags($localeCheck = true)
 {
     global $hashtags_table, $wpdb;
     $locale = get_locale();
-    $where = $localeCheck ? "WHERE locale = '" . $locale . "'" : "";
-    $hashtags = $wpdb->get_results("SELECT id, name, type FROM $hashtags_table".$where, ARRAY_A);
+    $where = $localeCheck ? " WHERE locale = '" . $locale . "'" : "";
+    $hashtags = $wpdb->get_results("SELECT id, name, type FROM $hashtags_table" . $where, ARRAY_A);
     return $hashtags;
 }
+
 $hashtags = getHashTags(false);
 // Initialize arrays to hold column names for type 0 and type 1
 $region_hash_tags = [];
@@ -305,96 +306,97 @@ function periskope_get_messages(WP_REST_Request $request)
     $hashtagsAry = [];
     if (!empty($hashtagsStr)) {
         $hashtagsAry = explode(',', $hashtagsStr);
-    } else {
-        foreach ($hashtags as $hashtag) {
-            $hashtagsAry[] = $hashtag['id'];
-        }
-    }
+//    } else {
+//        foreach ($hashtags as $hashtag) {
+//            $hashtagsAry[] = $hashtag['id'];
+//        }
+//    }
 
 
-    $allSameHashTags = [];
-    foreach ($hashtagsAry as $hashtag) {
-        $oneSameHashTags = [$hashtag];
-        $language = $wpdb->get_results("SELECT language FROM $hashtags_table WHERE id = " . $hashtag, ARRAY_A)[0]['language'];
-        if (!$language) {
-            $allSameHashTags[] = $oneSameHashTags;
-            continue;
-        }
-        $sameHashTags = $wpdb->get_results("SELECT id FROM $hashtags_table WHERE language = '" . $language . "' AND id != " . $hashtag, ARRAY_A);
-        foreach ($sameHashTags as $sameHashTag) {
-            $oneSameHashTags[] = $sameHashTag['id'];
-        }
-        $allSameHashTags[] = $oneSameHashTags;
-    }
-
-
-    function get_all_child_ids($parent_ids, $wpdb)
-    {
-        global $hashtags_table;
-        $all_ids = [];
-
-        // Ensure parent_ids is an array
-        if (!is_array($parent_ids)) {
-            $parent_ids = [$parent_ids];
-        }
-
-        // Add the parent_ids to the all_ids array
-        $all_ids = array_merge($all_ids, $parent_ids);
-
-        // Prepare the query to fetch child IDs
-        $placeholders = implode(',', array_fill(0, count($parent_ids), '%d'));
-        $query = "SELECT id FROM $hashtags_table WHERE parent_id IN ($placeholders)";
-
-        // Execute the query
-        $child_ids = $wpdb->get_col($wpdb->prepare($query, ...$parent_ids));
-
-        // If there are child IDs, recursively fetch their children
-        if (!empty($child_ids)) {
-            $child_ids = get_all_child_ids($child_ids, $wpdb);
-            $all_ids = array_merge($all_ids, $child_ids);
-        }
-
-        return $all_ids;
-    }
-
-    function build_filter_query($allSameHashTags, $wpdb)
-    {
-        global $hashtags_table;
-        $all_filter_blocks = [];
-        foreach ($allSameHashTags as $sameHashTag) {
-            $one_filter_block = [];
-            foreach ($sameHashTag as $id) {
-                // Get all related IDs (including children) for the current ID
-                $related_ids = get_all_child_ids([$id], $wpdb);
-
-                // Create an "OR" block for these related IDs
-                $placeholders = implode(',', array_fill(0, count($related_ids), '%d'));
-                $query = "SELECT name FROM $hashtags_table WHERE id IN ($placeholders)";
-                $names = $wpdb->get_col($wpdb->prepare($query, ...$related_ids));
-
-                if (!empty($names)) {
-                    // Manually escape the names and build the LIKE conditions
-                    $name_conditions = array_map(function ($name) use ($wpdb) {
-                        // Escape any special characters except %
-                        $escaped_name = addslashes($name);
-                        return "a.body LIKE '%" . $escaped_name . "%'";
-                    }, $names);
-                    $one_filter_block[] = '(' . implode(' OR ', $name_conditions) . ')';
-                }
+        $allSameHashTags = [];
+        foreach ($hashtagsAry as $hashtag) {
+            $oneSameHashTags = [$hashtag];
+            $language = $wpdb->get_results("SELECT language FROM $hashtags_table WHERE id = " . $hashtag, ARRAY_A)[0]['language'];
+            if (!$language) {
+                $allSameHashTags[] = $oneSameHashTags;
+                continue;
             }
-            $one_filter_block = implode(' OR ', $one_filter_block);
-            $all_filter_blocks[] = '(' . $one_filter_block . ')';
+            $sameHashTags = $wpdb->get_results("SELECT id FROM $hashtags_table WHERE language = '" . $language . "' AND id != " . $hashtag, ARRAY_A);
+            foreach ($sameHashTags as $sameHashTag) {
+                $oneSameHashTags[] = $sameHashTag['id'];
+            }
+            $allSameHashTags[] = $oneSameHashTags;
         }
-        // Join all filter blocks with "AND"
-        $final_query = implode(' AND ', $all_filter_blocks);
-        return $final_query;
-    }
 
-    // Construct the final WHERE clause for the query
-    $hashtagFilter = 'AND (' . build_filter_query($allSameHashTags, $wpdb) . ')';
+
+        function get_all_child_ids($parent_ids, $wpdb)
+        {
+            global $hashtags_table;
+            $all_ids = [];
+
+            // Ensure parent_ids is an array
+            if (!is_array($parent_ids)) {
+                $parent_ids = [$parent_ids];
+            }
+
+            // Add the parent_ids to the all_ids array
+            $all_ids = array_merge($all_ids, $parent_ids);
+
+            // Prepare the query to fetch child IDs
+            $placeholders = implode(',', array_fill(0, count($parent_ids), '%d'));
+            $query = "SELECT id FROM $hashtags_table WHERE parent_id IN ($placeholders)";
+
+            // Execute the query
+            $child_ids = $wpdb->get_col($wpdb->prepare($query, ...$parent_ids));
+
+            // If there are child IDs, recursively fetch their children
+            if (!empty($child_ids)) {
+                $child_ids = get_all_child_ids($child_ids, $wpdb);
+                $all_ids = array_merge($all_ids, $child_ids);
+            }
+
+            return $all_ids;
+        }
+
+        function build_filter_query($allSameHashTags, $wpdb)
+        {
+            global $hashtags_table;
+            $all_filter_blocks = [];
+            foreach ($allSameHashTags as $sameHashTag) {
+                $one_filter_block = [];
+                foreach ($sameHashTag as $id) {
+                    // Get all related IDs (including children) for the current ID
+                    $related_ids = get_all_child_ids([$id], $wpdb);
+
+                    // Create an "OR" block for these related IDs
+                    $placeholders = implode(',', array_fill(0, count($related_ids), '%d'));
+                    $query = "SELECT name FROM $hashtags_table WHERE id IN ($placeholders)";
+                    $names = $wpdb->get_col($wpdb->prepare($query, ...$related_ids));
+
+                    if (!empty($names)) {
+                        // Manually escape the names and build the LIKE conditions
+                        $name_conditions = array_map(function ($name) use ($wpdb) {
+                            // Escape any special characters except %
+                            $escaped_name = addslashes($name);
+                            return "a.body LIKE '%" . $escaped_name . "%'";
+                        }, $names);
+                        $one_filter_block[] = '(' . implode(' OR ', $name_conditions) . ')';
+                    }
+                }
+                $one_filter_block = implode(' OR ', $one_filter_block);
+                $all_filter_blocks[] = '(' . $one_filter_block . ')';
+            }
+            // Join all filter blocks with "AND"
+            $final_query = implode(' AND ', $all_filter_blocks);
+            return $final_query;
+        }
+
+        // Construct the final WHERE clause for the query
+        $hashtagFilter = 'AND (' . build_filter_query($allSameHashTags, $wpdb) . ')';
+    }
 //    print_r($hashtagFilter);exit();
     global $autoreply_message_body;
-    $autoreply_message_filter = 'AND NOT(a.has_quoted_msg = 1 AND a.body = "'.$autoreply_message_body.'")';
+    $autoreply_message_filter = 'AND NOT(a.has_quoted_msg = 1 AND a.body = "' . $autoreply_message_body . '")';
 
     $results = $wpdb->get_results($wpdb->prepare(
         "SELECT a.*, b.message_id as quote_message_id, b.author as quote_author, b.body as quote_body, b.has_media as quote_has_media, b.media as quote_media
